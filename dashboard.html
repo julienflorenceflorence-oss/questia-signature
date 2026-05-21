@@ -406,8 +406,58 @@
     </main>
 
     <script>
-        // Ce script pourra être enrichi pour fetcher les données réelles de Google Sheets ou d'une API n8n.
-        console.log("Dashboard QuestIA Initialisé — En attente de connexion n8n.");
+        const API_URL = "https://spotty-pumas-wink.loca.lt/webhook/questia-get-data";
+
+        async function refreshDashboard() {
+            try {
+                if (API_URL.includes("spotty-pumas-wink")) {
+                    console.log("Tentative de récupération des données réelles...");
+                    const response = await fetch(API_URL);
+                    if (!response.ok) throw new Error("Erreur API");
+                    const data = await response.json();
+                    updateUI(data);
+                }
+            } catch (err) {
+                console.warn("Utilisation des données de démo (API non disponible ou tunnel expiré).", err);
+            }
+        }
+
+        function updateUI(responses) {
+            // Mise à jour des compteurs
+            document.getElementById('totalResponses').innerText = responses.length;
+            
+            // Calcul du taux d'intérêt (exemple : q19 budget > 0)
+            const interested = responses.filter(r => r.q19 && r.q19.length > 0).length;
+            const rate = responses.length > 0 ? Math.round((interested / responses.length) * 100) : 0;
+            document.getElementById('interestRate').innerText = rate + "%";
+
+            // Nettoyage et peuplement de la table
+            const tbody = document.getElementById('responseTable');
+            tbody.innerHTML = "";
+
+            responses.reverse().slice(0, 10).forEach(res => {
+                const initials = res.q0 ? res.q0.substring(0, 2).toUpperCase() : "??";
+                const row = `
+                    <tr>
+                        <td>
+                            <div class="avatar-cell">
+                                <div class="avatar-circle">${initials}</div>
+                                <span>Participant</span>
+                            </div>
+                        </td>
+                        <td>${res.q0 || "Non spécifié"}</td>
+                        <td>${res.q5 || "-"}</td>
+                        <td>${res.q12 ? "Oui" : "Non"}</td>
+                        <td><span class="status-badge" style="background: rgba(0,229,255,0.1); color: var(--accent); border-color: rgba(0,229,255,0.2);">Nouveau</span></td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // Auto-refresh toutes les 30 secondes
+        setInterval(refreshDashboard, 30000);
+        refreshDashboard();
     </script>
 </body>
 </html>
