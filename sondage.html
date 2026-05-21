@@ -334,14 +334,51 @@
             nextBtn.textContent = currentStep === totalSteps ? 'Terminer' : 'Suivant';
         }
 
-        nextBtn.addEventListener('click', () => {
+        nextBtn.addEventListener('click', async () => {
             if (currentStep < totalSteps) {
                 currentStep++;
                 updateStep();
                 window.scrollTo(0, 0);
             } else {
-                alert("Merci pour votre participation ! L'équipe QuestIA vous contactera prochainement.");
-                // Ici on pourrait envoyer les données vers une API ou Google Sheets
+                // Collecte des données
+                const formData = new FormData(form);
+                const data = {};
+                formData.forEach((value, key) => { data[key] = value; });
+                data.timestamp = new Date().toISOString();
+                data.source = "SMS_Audit_2026";
+
+                // URL du Webhook n8n (À REMPLACER PAR VOTRE URL PRODUCTION)
+                const N8N_WEBHOOK_URL = "VOTRE_URL_WEBHOOK_N8N_ICI";
+
+                nextBtn.disabled = true;
+                nextBtn.textContent = "Envoi...";
+
+                try {
+                    if (N8N_WEBHOOK_URL === "VOTRE_URL_WEBHOOK_N8N_ICI") {
+                        console.log("Simulation d'envoi (URL non configurée) :", data);
+                        alert("Merci ! Vos réponses ont été enregistrées localement (URL n8n non configurée).");
+                    } else {
+                        const response = await fetch(N8N_WEBHOOK_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+
+                        if (response.ok) {
+                            alert("Merci ! Vos réponses ont été envoyées avec succès à l'équipe QuestIA.");
+                        } else {
+                            throw new Error("Erreur serveur");
+                        }
+                    }
+                    
+                    // Optionnel : Redirection vers votre site après succès
+                    // window.location.href = "https://julienflorenceflorence-oss.github.io/questia-signature/";
+                    
+                } catch (err) {
+                    alert("Désolé, une erreur est survenue lors de l'envoi. Veuillez réessayer.");
+                    nextBtn.disabled = false;
+                    nextBtn.textContent = "Terminer";
+                }
             }
         });
 
